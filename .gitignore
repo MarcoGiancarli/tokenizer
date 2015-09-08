@@ -1,3 +1,6 @@
+# JetBrains
+.idea/*
+
 # Object files
 *.o
 *.ko
