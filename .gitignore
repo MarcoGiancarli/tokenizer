@@ -1,3 +1,6 @@
+# instructions files
+*.pdf
+
 # JetBrains
 .idea/*
 
