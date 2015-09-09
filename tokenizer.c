@@ -64,11 +64,21 @@ void TKDestroy( TokenizerT * tk ) {
  * You need to fill in this function as part of your implementation.
  */
 
-char *TKGetNextToken( TokenizerT * tk ) {
-
-  return NULL;
+char *TKGetNextToken(TokenizerT *tk) {
+    // TODO: initial states
+    return NULL;
 }
 
+/******************************************/
+/*************** Token States *************/
+/******************************************/
+
+void _zero(*tk)
+
+
+/******************************************/
+/************ End Token States ************/
+/******************************************/
 
 /*
  * Prints either a word or a reserved word
