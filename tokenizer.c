@@ -8,6 +8,8 @@
  */
 
 struct TokenizerT_ {
+    char *inputStream;
+    char *tokenBuffer;
 };
 
 typedef struct TokenizerT_ TokenizerT;
@@ -27,8 +29,14 @@ typedef struct TokenizerT_ TokenizerT;
  */
 
 TokenizerT *TKCreate( char * ts ) {
-
-  return NULL;
+    // TODO: use strcpy to copy input stream ts
+    TokenizerT *newTokenizer = malloc(sizeof(TokenizerT));
+    
+    streamSize = strlen(ts);
+    newTokenizer->inputStream = malloc(sizeof(char) * streamSize);
+    newTokenizer->tokenBuffer = malloc(sizeof(char)*1000);
+    
+    return newTokenizer;
 }
 
 /*
@@ -39,6 +47,9 @@ TokenizerT *TKCreate( char * ts ) {
  */
 
 void TKDestroy( TokenizerT * tk ) {
+    free(tk->inputStream);
+    free(tk->tokenBuffer);
+    free(tk);
 }
 
 /*
@@ -57,6 +68,52 @@ char *TKGetNextToken( TokenizerT * tk ) {
 
   return NULL;
 }
+
+
+/*
+ * Prints either a word or a reserved word
+ */
+
+void printWord(char *word) {
+    const char *reservedWords[28];
+    reservedWords[0] = "auto";
+    reservedWords[1] = "break";
+    reservedWords[2] = "case";
+    reservedWords[3] = "char";
+    reservedWords[4] = "continue";
+    reservedWords[5] = "default";
+    reservedWords[6] = "do";
+    reservedWords[7] = "double";
+    reservedWords[8] = "else";
+    reservedWords[9] = "entry";
+    reservedWords[10] = "extern";
+    reservedWords[11] = "float";
+    reservedWords[12] = "for";
+    reservedWords[13] = "goto";
+    reservedWords[14] = "if";
+    reservedWords[15] = "int";
+    reservedWords[16] = "long";
+    reservedWords[17] = "register";
+    reservedWords[18] = "return";
+    reservedWords[19] = "short";
+    reservedWords[20] = "sizeof";
+    reservedWords[21] = "static";
+    reservedWords[22] = "struct";
+    reservedWords[23] = "switch";
+    reservedWords[24] = "typedef";
+    reservedWords[25] = "union";
+    reservedWords[26] = "unsigned";
+    reservedWords[27] = "while";
+    
+    int 
+    int rWordIndex = 0;
+    for(; rWordIndex < 28; rWordIndex++) {
+        if(strcmp(word, reservedWords[rWordIndex]) == 0) {
+            // TODO: compare, make bool isReserved, then print word
+        }
+    }
+}
+
 
 /*
  * main will have a string argument (in argv[1]).
