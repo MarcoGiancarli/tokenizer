@@ -12,5 +12,5 @@ Possible Token Types:
 * word
 * reserved word
 * ALL UNIQUE OPERATORS (see C reference sheet)
-
+* (comments, // and /*)
 
