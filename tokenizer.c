@@ -2,17 +2,28 @@
  * tokenizer.c
  */
 #include <stdio.h>
+#include <string.h>
+
 
 /*
  * Tokenizer type.  You need to fill in the type as part of your implementation.
  */
-
 struct TokenizerT_ {
     char *inputStream;
     char *tokenBuffer;
+    char *inputIter;
+    char *bufferIter;
+    int bufferSize;
 };
 
+struct TokenT_ {
+    char *text;
+    char *type;
+}
+
+typedef struct TokenT_ TokenT;
 typedef struct TokenizerT_ TokenizerT;
+
 
 /*
  * TKCreate creates a new TokenizerT object for a given token stream
@@ -27,17 +38,23 @@ typedef struct TokenizerT_ TokenizerT;
  *
  * You need to fill in this function as part of your implementation.
  */
-
-TokenizerT *TKCreate( char * ts ) {
+TokenizerT *TKCreate(char *ts) {
     // TODO: use strcpy to copy input stream ts
-    TokenizerT *newTokenizer = malloc(sizeof(TokenizerT));
+    TokenizerT *newTokenizer = (TokenizerT *) malloc(sizeof(TokenizerT));
     
     streamSize = strlen(ts);
-    newTokenizer->inputStream = malloc(sizeof(char) * streamSize);
-    newTokenizer->tokenBuffer = malloc(sizeof(char)*1000);
+    newTokenizer->inputStream = (char *) malloc(sizeof(char) * streamSize);
+    strcpy(newTokenizer->inputStream, ts);
+    newTokenizer->inputIter = newTokenizer->inputStream;
+    
+    newTokenizer->bufferSize = 0;
+    newTokenizer->tokenBuffer = (char *) malloc(sizeof(char) * 1000);
+    strcpy(newTokenizer->tokenBuffer, "");  // empty string means this just puts '\0' as the first char
+    newTokenizer->bufferIter = newTokenizer->tokenBuffer;
     
     return newTokenizer;
 }
+
 
 /*
  * TKDestroy destroys a TokenizerT object.  It should free all dynamically
@@ -45,12 +62,14 @@ TokenizerT *TKCreate( char * ts ) {
  *
  * You need to fill in this function as part of your implementation.
  */
+void TKDestroy(TokenizerT *tk) {
+    assert(tk != NULL)
 
-void TKDestroy( TokenizerT * tk ) {
     free(tk->inputStream);
     free(tk->tokenBuffer);
     free(tk);
 }
+
 
 /*
  * TKGetNextToken returns the next token from the token stream as a
@@ -63,28 +82,40 @@ void TKDestroy( TokenizerT * tk ) {
  *
  * You need to fill in this function as part of your implementation.
  */
+TokenT *TKGetNextToken(TokenizerT *tk) {
+    char curr = &tk->inputIter;
 
-char *TKGetNextToken(TokenizerT *tk) {
+    if(isalpha(curr) || curr == '_') {
+        return _word(tk)
+    }
     // TODO: initial states
-    return NULL;
 }
 
-/******************************************/
-/*************** Token States *************/
-/******************************************/
+void nextChar(TokenizerT *tk) {
+    //  1. add one char to buffer, move the bufferIter over by one, move back \0 by one, increment bufferSize
+    //  2. if buffer size is 999, exit the program gracefully
+    //  3. move the inputIter over by one
+    //  4. if the inputIter pointer points to '\0', end the TKGetNextToken call gracefully
+    tk->bufferIter[0] = tk->[0];
+    tk->bufferIter[1] = '\0';
+    tk->bufferSize++;
+    if(tk->bufferSize == 999) {
+        // TODO: exit gracefully
+    }
+    tk->inputIter++;
+}
 
-void _zero(*tk)
+void clearBuffer(TokenizerT *tk) {
+    tk->tokenBuffer = "";  // empty string means this just puts '\0' as the first char
+    tk->bufferSize = 0;
+    tk->bufferIter = tk->tokenBuffer;
+}
 
-
-/******************************************/
-/************ End Token States ************/
-/******************************************/
 
 /*
  * Prints either a word or a reserved word
  */
-
-void printWord(char *word) {
+void isReservedWord(TokenizerT *tk) {
     const char *reservedWords[28];
     reservedWords[0] = "auto";
     reservedWords[1] = "break";
@@ -115,14 +146,59 @@ void printWord(char *word) {
     reservedWords[26] = "unsigned";
     reservedWords[27] = "while";
     
-    int 
+    int isReservedWord = 0;
     int rWordIndex = 0;
     for(; rWordIndex < 28; rWordIndex++) {
         if(strcmp(word, reservedWords[rWordIndex]) == 0) {
-            // TODO: compare, make bool isReserved, then print word
+            isReservedWord = 1;
+        }
+    }
+    
+    return isReservedWord
+}
+
+
+/*
+ * Make a token struct from the current state of the tokenizer and the 
+ * identified type.
+ */
+TokenT *makeToken(TokenizerT *tk, char *type) {
+    TokenT *token = malloc(sizeof(TokenT));
+    
+    token->text = malloc(sizeof(char) * 1000);
+    strcpy(token->text, tk->tokenBuffer);
+    
+    token->type = malloc(sizeof(char) * 50);
+    strcpy(token->type, type);
+
+    return token
+}
+
+
+/******************************************/
+/*************** Token States *************/
+/******************************************/
+
+
+TokenT *_word(TokenizerT *tk) {
+    nextChar(tk);
+    if(isalnum(tk->inputIter)) {
+        return _word(tk);
+    } else {
+        // TODO: return a token struct type with a string for type and a string for the text of it.
+        // TODO: make that token struct type
+        if(isReservedWord(tk->tokenBuffer)) {
+            return makeToken(tk, "word");
+        } else {
+            return makeToken(tk, "reserved word");
         }
     }
 }
+
+
+/******************************************/
+/************ End Token States ************/
+/******************************************/
 
 
 /*
@@ -131,8 +207,8 @@ void printWord(char *word) {
  * Print out the tokens in the second string in left-to-right order.
  * Each token should be printed on a separate line.
  */
-
 int main(int argc, char **argv) {
 
-  return 0;
+    return 0;
 }
+
