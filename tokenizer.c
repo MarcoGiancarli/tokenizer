@@ -2,7 +2,10 @@
  * tokenizer.c
  */
 #include <stdio.h>
+#include <stdlib.h>
+#include <ctype.h>
 #include <string.h>
+#include <assert.h>
 
 
 /*
@@ -19,7 +22,7 @@ struct TokenizerT_ {
 struct TokenT_ {
     char *text;
     char *type;
-}
+};
 
 typedef struct TokenT_ TokenT;
 typedef struct TokenizerT_ TokenizerT;
@@ -42,7 +45,7 @@ TokenizerT *TKCreate(char *ts) {
     // TODO: use strcpy to copy input stream ts
     TokenizerT *newTokenizer = (TokenizerT *) malloc(sizeof(TokenizerT));
     
-    streamSize = strlen(ts);
+    long int streamSize = strlen(ts) + 1;
     newTokenizer->inputStream = (char *) malloc(sizeof(char) * streamSize);
     strcpy(newTokenizer->inputStream, ts);
     newTokenizer->inputIter = newTokenizer->inputStream;
@@ -63,7 +66,7 @@ TokenizerT *TKCreate(char *ts) {
  * You need to fill in this function as part of your implementation.
  */
 void TKDestroy(TokenizerT *tk) {
-    assert(tk != NULL)
+    assert(tk != NULL);
 
     free(tk->inputStream);
     free(tk->tokenBuffer);
@@ -71,42 +74,20 @@ void TKDestroy(TokenizerT *tk) {
 }
 
 
-/*
- * TKGetNextToken returns the next token from the token stream as a
- * character string.  Space for the returned token should be dynamically
- * allocated.  The caller is responsible for freeing the space once it is
- * no longer needed.
- *
- * If the function succeeds, it returns a C string (delimited by '\0')
- * containing the token.  Else it returns 0.
- *
- * You need to fill in this function as part of your implementation.
- */
-TokenT *TKGetNextToken(TokenizerT *tk) {
-    char curr = &tk->inputIter;
-
-    if(isalpha(curr) || curr == '_') {
-        return _word(tk)
-    }
-    // TODO: initial states
-}
-
 void nextChar(TokenizerT *tk) {
-    //  1. add one char to buffer, move the bufferIter over by one, move back \0 by one, increment bufferSize
-    //  2. if buffer size is 999, exit the program gracefully
-    //  3. move the inputIter over by one
-    //  4. if the inputIter pointer points to '\0', end the TKGetNextToken call gracefully
-    tk->bufferIter[0] = tk->[0];
-    tk->bufferIter[1] = '\0';
-    tk->bufferSize++;
+    tk->bufferIter[0] = tk->inputIter[0];  // move new char to end of buffer
+    tk->inputIter++;                       // move the input iterator over
+    tk->bufferIter++;                      // move the buffer iterator over
+    tk->bufferIter[0] = '\0';              // add a null to the end of buffer
+    tk->bufferSize++;                      // increase bufferSize accordingly
     if(tk->bufferSize == 999) {
         // TODO: exit gracefully
+        exit(1);
     }
-    tk->inputIter++;
 }
 
 void clearBuffer(TokenizerT *tk) {
-    tk->tokenBuffer = "";  // empty string means this just puts '\0' as the first char
+    tk->tokenBuffer[0] = '\0';  // immediately end the string
     tk->bufferSize = 0;
     tk->bufferIter = tk->tokenBuffer;
 }
@@ -115,7 +96,7 @@ void clearBuffer(TokenizerT *tk) {
 /*
  * Prints either a word or a reserved word
  */
-void isReservedWord(TokenizerT *tk) {
+int isReservedWord(char *word) {
     const char *reservedWords[28];
     reservedWords[0] = "auto";
     reservedWords[1] = "break";
@@ -154,7 +135,7 @@ void isReservedWord(TokenizerT *tk) {
         }
     }
     
-    return isReservedWord
+    return isReservedWord;
 }
 
 
@@ -163,15 +144,30 @@ void isReservedWord(TokenizerT *tk) {
  * identified type.
  */
 TokenT *makeToken(TokenizerT *tk, char *type) {
-    TokenT *token = malloc(sizeof(TokenT));
+    TokenT *token = (TokenT *) malloc(sizeof(TokenT));
     
-    token->text = malloc(sizeof(char) * 1000);
+    token->text = (char *) malloc(sizeof(char) * 1000);
     strcpy(token->text, tk->tokenBuffer);
     
-    token->type = malloc(sizeof(char) * 50);
+    token->type = (char *) malloc(sizeof(char) * 50);
     strcpy(token->type, type);
 
-    return token
+    return token;
+}
+
+
+void destroyToken(TokenT *token) {
+    free(token->text);
+    free(token->type);
+    free(token);
+}
+
+
+/*
+ * Print a token. Used in main loop.
+ */
+void printToken(TokenT *token) {
+    printf("%s \"%s\"\n", token->type, token->text);
 }
 
 
@@ -180,19 +176,50 @@ TokenT *makeToken(TokenizerT *tk, char *type) {
 /******************************************/
 
 
+// TODO: remove unnecessary recursion for multiple chars in a row
 TokenT *_word(TokenizerT *tk) {
     nextChar(tk);
-    if(isalnum(tk->inputIter)) {
+    if(isalnum(tk->inputIter[0])) {
         return _word(tk);
-    } else {
-        // TODO: return a token struct type with a string for type and a string for the text of it.
-        // TODO: make that token struct type
+    } else {  // end of token
         if(isReservedWord(tk->tokenBuffer)) {
             return makeToken(tk, "word");
         } else {
             return makeToken(tk, "reserved word");
         }
     }
+}
+
+
+/*
+ * TKGetNextToken returns the next token from the token stream as a
+ * character string.  Space for the returned token should be dynamically
+ * allocated.  The caller is responsible for freeing the space once it is
+ * no longer needed.
+ *
+ * If the function succeeds, it returns a C string (delimited by '\0')
+ * containing the token.  Else it returns 0.
+ *
+ * You need to fill in this function as part of your implementation.
+ */
+TokenT *TKGetNextToken(TokenizerT *tk) {
+    char curr = tk->inputIter[0];
+    
+    // skip all whitespace before next token
+    while(isspace(curr)) {
+        nextChar(tk);
+        clearBuffer(tk);
+    }
+
+    if(curr == '\0') {
+        return NULL;
+    } else if(isalpha(curr) || curr == '_') {
+        return _word(tk);
+    } else {
+        return NULL;
+        // TODO: figure out how to handle invalid char
+    }
+    // TODO: all initial states for tokens
 }
 
 
@@ -208,6 +235,22 @@ TokenT *_word(TokenizerT *tk) {
  * Each token should be printed on a separate line.
  */
 int main(int argc, char **argv) {
+    // make sure theres exactly 1 argument
+    if(argc != 2) {
+        printf("Invalid number of arguments. \n");
+        printf("Usage: \n    ./tokenizer <C-code string>\n");
+        exit(1);
+    }
+
+    TokenizerT *tokenizer = TKCreate(argv[1]);
+    
+    TokenT *token;
+    while((token = TKGetNextToken(tokenizer)) != NULL) {
+        printToken(token);
+        destroyToken(token);
+    }
+
+    TKDestroy(tokenizer);
 
     return 0;
 }
