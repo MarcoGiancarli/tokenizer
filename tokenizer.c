@@ -190,6 +190,55 @@ TokenT *_word(TokenizerT *tk) {
     }
 }
 
+//function to handle being given a zero as the first char in a new token
+TokenT *_zero(TokenizerT *tk) {
+    nextChar(tk);
+    if((tk->inputIter)>=0 && (tk->inputIter)<=7 ) {
+        return _octal(tk);
+    }
+    if((tk->inputIter)=='x' || (tk->inputIter)=='X'){
+        int isFirst = 1;
+        return _hex(tk, 1);
+    }
+    if((tk->inputIter)=='.'){
+        return _float(tk);
+    }
+    else {
+        return makeToken(tk, "zero");
+    }
+}
+
+//function for handling octal numbers
+TokenT *_octal(TokenizerT *tk) {
+
+}
+
+//function for handling hex numbers
+TokenT *_hex(TokenizerT *tk, int isFirst) {
+    nextChar(tk);
+    if((isxdigit(tk->inputIter))){
+        return _hex(tk);
+    }
+    else {
+        if(isFirst = 1) {
+            //TODO: ERROR MESSAGE HERE
+        }
+        else {
+            return makeToken(tk, "hexadecimal number");
+        }
+    }
+}
+
+//function for handling floating point numbers
+TokenT *_float(TokenizerT *tk) {
+
+}
+
+//function for handling floating point numbers involving exponents
+TokenT *_expofloat(TokenizerT *tk) {
+
+}
+
 
 /*
  * TKGetNextToken returns the next token from the token stream as a
@@ -215,6 +264,8 @@ TokenT *TKGetNextToken(TokenizerT *tk) {
         return NULL;
     } else if(isalpha(curr) || curr == '_') {
         return _word(tk);
+    //} else if(curr == '0') {
+    //    return _zero(tk)
     } else {
         return NULL;
         // TODO: figure out how to handle invalid char
