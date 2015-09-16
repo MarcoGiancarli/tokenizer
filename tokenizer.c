@@ -177,6 +177,13 @@ void printToken(TokenT *token) {
 /*************** Token States *************/
 /******************************************/
 
+// ***** HUGE TODO: make sure to handle if the input stream ends abruptly *****
+
+
+TokenT *_invalid(TokenizerT *tk) {
+    nextChar(tk);
+    return makeToken(tk, "invalid token");
+}
 
 // TODO: remove unnecessary recursion for multiple chars in a row
 TokenT *_word(TokenizerT *tk) {
@@ -190,6 +197,156 @@ TokenT *_word(TokenizerT *tk) {
             return makeToken(tk, "word");
         }
     }
+}
+
+TokenT *_neq(TokenizerT *tk) {
+    nextChar(tk);
+    if(tk->inputIter[0] == '=') {
+        nextChar(tk);
+        return makeToken(tk, "not-equals operator");
+    } else {
+        nextChar(tk);
+        return _invalid(tk);
+    }
+}
+
+TokenT *_double_quote(TokenizerT *tk) {
+    nextChar(tk);
+    while(tk->inputIter[0] != '"') {
+        if(tk->inputIter[0] == '\\') {
+            nextChar(tk);
+        }
+        nextChar(tk);
+    }
+    nextChar(tk);
+    return makeToken(tk, "string");
+}
+
+TokenT *_mod(TokenizerT *tk) {
+    nextChar(tk);
+    if(tk->inputIter[0] == '=') {
+        nextChar(tk);
+        return makeToken(tk, "mod-equals operator");
+    } else {
+        return makeToken(tk, "mod operator");
+    }
+}
+
+TokenT *_bit_and(TokenizerT *tk) {
+    nextChar(tk);
+    if(tk->inputIter[0] == '=') {
+        nextChar(tk);
+        return makeToken(tk, "and-equals operator");
+    } else if(tk->inputIter[0] == '&') {
+        nextChar(tk);
+        return makeToken(tk, "logical-and operator");
+    } else {
+        return makeToken(tk, "bitwise-and operator");
+    }
+}
+
+TokenT *_single_quote(TokenizerT *tk) {
+    nextChar(tk);
+    if(tk->inputIter[0] != '\\') {
+        nextChar(tk);
+        if(tk->inputIter[0] == '\'') {
+            nextChar(tk);
+            return makeToken(tk, "");
+        } else {
+            nextChar(tk);
+            return 0;  // TODO: finish this whole function from here down
+        }
+        return makeToken(tk, "");
+    } else if(tk->inputIter[0] == '&') {
+        nextChar(tk);
+        return makeToken(tk, "");
+    } else {
+        return makeToken(tk, "");
+    }
+}
+
+TokenT *_open_paren(TokenizerT *tk) {
+    return 0;
+}
+
+TokenT *_close_paren(TokenizerT *tk) {
+    return 0;
+}
+
+TokenT *_mult(TokenizerT *tk) {
+    return 0;
+}
+
+TokenT *_plus(TokenizerT *tk) {
+    return 0;
+}
+
+TokenT *_comma(TokenizerT *tk) {
+    return 0;
+}
+
+TokenT *_minus(TokenizerT *tk) {
+    return 0;
+}
+
+TokenT *_dot(TokenizerT *tk) {
+    return 0;
+}
+
+TokenT *_div(TokenizerT *tk) {
+    return 0;
+}
+
+TokenT *_ternary_colon(TokenizerT *tk) {
+    return 0;
+}
+
+TokenT *_semicolon(TokenizerT *tk) {
+    return 0;
+}
+
+TokenT *_lt(TokenizerT *tk) {
+    return 0;
+}
+
+TokenT *_eq(TokenizerT *tk) {
+    return 0;
+}
+
+TokenT *_gt(TokenizerT *tk) {
+    return 0;
+}
+
+TokenT *_ternary_qmark(TokenizerT *tk) {
+    return 0;
+}
+
+TokenT *_open_bracket(TokenizerT *tk) {
+    return 0;
+}
+
+TokenT *_close_bracket(TokenizerT *tk) {
+    return 0;
+}
+
+TokenT *_bit_xor(TokenizerT *tk) {
+    return 0;
+}
+
+TokenT *_open_brace(TokenizerT *tk) {
+    return 0;
+}
+
+TokenT *_bit_or(TokenizerT *tk) {
+    return 0;
+}
+
+TokenT *_close_brace(TokenizerT *tk) {
+    return 0;
+}
+
+TokenT *_bit_not(TokenizerT *tk) {
+    return 0;
 }
 
 //function to handle being given a zero as the first char in a new token
@@ -270,11 +427,72 @@ TokenT *TKGetNextToken(TokenizerT *tk) {
         return _word(tk);
     //} else if(curr == '0') {
     //    return _zero(tk)
+    } else if(curr == '!') { // neq
+        return _neq(tk);
+    } else if(curr == '"') { // double_quote
+        return _double_quote(tk);
+    } else if(curr == '#') { // INVALID
+        return _invalid(tk);
+    } else if(curr == '$') { // INVALID
+        return _invalid(tk);
+    } else if(curr == '%') { // mod, mod_eq
+        return _mod(tk);
+    } else if(curr == '&') { // bit_and, log_and, address (?)
+        return _bit_and(tk);
+    } else if(curr == '\'') { // single_quote
+        return _single_quote(tk);
+    } else if(curr == '(') { // open_paren
+        return _open_paren(tk);
+    } else if(curr == ')') { // close_paren
+        return _close_paren(tk);
+    } else if(curr == '*') { // mult, mult_eq, pointer (?)
+        return _mult(tk);
+    } else if(curr == '+') { // plus, plus_eq, inc
+        return _plus(tk);
+    } else if(curr == ',') { // comma
+        return _comma(tk);
+    } else if(curr == '-') { // minus, minus_eq, dec, struct_pointer
+        return _minus(tk);
+    } else if(curr == '.') { // dot
+        return _dot(tk);
+    } else if(curr == '/') { // div, div_eq
+        return _div(tk);
+    } else if(curr == ':') { // ternary_colon
+        return _ternary_colon(tk);
+    } else if(curr == ';') { // semicolon
+        return _semicolon(tk);
+    } else if(curr == '<') { // lt, lshift, lt_eq
+        return _lt(tk);
+    } else if(curr == '=') { // eq, assign
+        return _eq(tk);
+    } else if(curr == '>') { // gt, rshift, gt_eq
+        return _gt(tk);
+    } else if(curr == '?') { // ternary_qmark
+        return _ternary_qmark(tk);
+    } else if(curr == '@') { // INVALID
+        return _invalid(tk);
+    } else if(curr == '[') { // open_bracket
+        return _open_bracket(tk);
+    } else if(curr == '\\') { // backslash (?)
+        return _invalid(tk);
+    } else if(curr == ']') { // close_bracket
+        return _close_bracket(tk);
+    } else if(curr == '^') { // bit_xor
+        return _bit_xor(tk);
+    } else if(curr == '`') { // INVALID
+        return _invalid(tk);
+    } else if(curr == '{') { // open_brace
+        return _open_brace(tk);
+    } else if(curr == '|') { // bit_or, log_or
+        return _bit_or(tk);
+    } else if(curr == '}') { // close_brace
+        return _close_brace(tk);
+    } else if(curr == '~') { // bit_not
+        return _bit_not(tk);
     } else {
-        return NULL;
+        return _invalid(tk);
         // TODO: figure out how to handle invalid char
     }
-    // TODO: all initial states for tokens
 }
 
 
