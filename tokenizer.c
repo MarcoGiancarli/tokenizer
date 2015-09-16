@@ -31,7 +31,7 @@ typedef struct TokenizerT_ TokenizerT;
 /*
  * TKCreate creates a new TokenizerT object for a given token stream
  * (given as a string).
- * 
+ *
  * TKCreate should copy the arguments so that it is not dependent on
  * them staying immutable after returning.  (In the future, this may change
  * to increase efficiency.)
@@ -49,12 +49,12 @@ TokenizerT *TKCreate(char *ts) {
     newTokenizer->inputStream = (char *) malloc(sizeof(char) * streamSize);
     strcpy(newTokenizer->inputStream, ts);
     newTokenizer->inputIter = newTokenizer->inputStream;
-    
+
     newTokenizer->bufferSize = 0;
     newTokenizer->tokenBuffer = (char *) malloc(sizeof(char) * 1000);
-    strcpy(newTokenizer->tokenBuffer, "");  // empty string means this just puts '\0' as the first char
+    strcpy(newTokenizer->tokenBuffer, "");  // end the buffer with this null byte
     newTokenizer->bufferIter = newTokenizer->tokenBuffer;
-    
+
     return newTokenizer;
 }
 
@@ -128,7 +128,7 @@ int isReservedWord(char *word) {
     reservedWords[25] = "union";
     reservedWords[26] = "unsigned";
     reservedWords[27] = "while";
-    
+
     int isReservedWord = 0;
     int rWordIndex = 0;
     for(; rWordIndex < 28; rWordIndex++) {
@@ -136,21 +136,21 @@ int isReservedWord(char *word) {
             isReservedWord = 1;
         }
     }
-    
+
     return isReservedWord;
 }
 
 
 /*
- * Make a token struct from the current state of the tokenizer and the 
+ * Make a token struct from the current state of the tokenizer and the
  * identified type.
  */
 TokenT *makeToken(TokenizerT *tk, char *type) {
     TokenT *token = (TokenT *) malloc(sizeof(TokenT));
-    
+
     token->text = (char *) malloc(sizeof(char) * 1000);
     strcpy(token->text, tk->tokenBuffer);
-    
+
     token->type = (char *) malloc(sizeof(char) * 50);
     strcpy(token->type, type);
 
@@ -349,54 +349,99 @@ TokenT *_bit_not(TokenizerT *tk) {
     return 0;
 }
 
-//function to handle being given a zero as the first char in a new token
-//TokenT *_zero(TokenizerT *tk) {
-//    nextChar(tk);
-//    if((tk->inputIter)>=0 && (tk->inputIter)<=7 ) {
-//        return _octal(tk);
-//    }
-//    if((tk->inputIter)=='x' || (tk->inputIter)=='X'){
-//        int isFirst = 1;
-//        return _hex(tk, 1);
-//    }
-//    if((tk->inputIter)=='.'){
-//        return _float(tk);
-//    }
-//    else {
-//        return makeToken(tk, "zero");
-//    }
-//}
-
-//function for handling octal numbers
-//TokenT *_octal(TokenizerT *tk) {
-//
-//}
-
-//function for handling hex numbers
-//TokenT *_hex(TokenizerT *tk, int isFirst) {
-//    nextChar(tk);
-//    if((isxdigit(tk->inputIter))){
-//        return _hex(tk);
-//    }
-//    else {
-//        if(isFirst = 1) {
-//            //TODO: ERROR MESSAGE HERE
-//        }
-//        else {
-//            return makeToken(tk, "hexadecimal number");
-//        }
-//    }
-//}
+//function for handling floating point numbers involving exponents
+TokenT *_expofloat(TokenizerT *tk, int isFirst, int lastWasSign) {
+  nextChar(tk);
+  if(isdigit(tk->inputIter)) {
+    return _expofloat(tk, 0, 0);
+  }
+  else if((tk->inputIter) == '+' || (tk->inputIter) == '-') {
+    if(isFirst == 1){
+      return _expofloat(tk, 0, 1);
+    }
+    else if(lastWasSign == 1) {
+      //TODO ERROR MESSAGE HERE
+    }
+    else {
+      return makeToken(tk, "floating point number with exponent");
+    }
+  }
+  else {
+    if(isFirst==1) {
+      //TODO ERROR MESSAGE HERE
+    }
+    else if(lastWasSign == 1) {
+      //TODO ERROR MESSAGE HERE
+    }
+    else {
+      return makeToken(tk, "floating point number with exponent");
+    }
+  }
+}
 
 //function for handling floating point numbers
-//TokenT *_float(TokenizerT *tk) {
-//
-//}
+TokenT *_float(TokenizerT *tk, int isFloat) {
+  nextChar(tk);
+  if(isdigit(tk->inputIter)){
+    return _float(tk, 0);
+  }
+  else if((tk->inputIter) == 'e' || (tk->inputIter) == 'E') {
+    return _expofloat(tk, 1, 0);
+  }
+  else {
+    if(isFirst == 1){
+      //TODO: ERROR MESSAGE HERE
+    }
+    else{
+      return makeToken(tk, "floating point number");
+    }
+  }
+}
 
-//function for handling floating point numbers involving exponents
-//TokenT *_expofloat(TokenizerT *tk) {
-//
-//}
+//function for handling octal numbers
+TokenT *_octal(TokenizerT *tk) {
+  nextChar(tk);
+  if((tk->inputIter)>='0' && (tk->inputIter)<='7' ) {
+      return _octal(tk);
+  }
+  else {
+    return makeToken(tk, "octal number");
+  }
+}
+
+//function to handle being given a zero as the first char in a new token
+TokenT *_zero(TokenizerT *tk) {
+    nextChar(tk);
+    if((tk->inputIter)>=0 && (tk->inputIter)<=7 ) {
+        return _octal(tk);
+    }
+    if((tk->inputIter)=='x' || (tk->inputIter)=='X'){
+        int isFirst = 1;
+        return _hex(tk, 1);
+    }
+    if((tk->inputIter)=='.'){
+        return _float(tk);
+    }
+    else {
+        return makeToken(tk, "zero");
+    }
+}
+
+//function for handling hex numbers
+TokenT *_hex(TokenizerT *tk, int isFirst) {
+    nextChar(tk);
+    if((isxdigit(tk->inputIter))){
+        return _hex(tk);
+    }
+    else {
+        if(isFirst = 1) {
+            //TODO: ERROR MESSAGE HERE
+        }
+        else {
+            return makeToken(tk, "hexadecimal number");
+        }
+    }
+}
 
 
 /*
@@ -413,7 +458,7 @@ TokenT *_bit_not(TokenizerT *tk) {
 TokenT *TKGetNextToken(TokenizerT *tk) {
     clearBuffer(tk);
     char curr = tk->inputIter[0];
-    
+
     // skip all whitespace before next token
     while(isspace(curr)) {
         nextChar(tk);
@@ -516,7 +561,7 @@ int main(int argc, char **argv) {
     }
 
     TokenizerT *tokenizer = TKCreate(argv[1]);
-    
+
     TokenT *token;
     while((token = TKGetNextToken(tokenizer)) != NULL) {
         printToken(token);
@@ -527,4 +572,3 @@ int main(int argc, char **argv) {
 
     return 0;
 }
-
