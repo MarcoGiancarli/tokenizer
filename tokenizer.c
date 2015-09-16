@@ -45,7 +45,7 @@ TokenizerT *TKCreate(char *ts) {
     // TODO: use strcpy to copy input stream ts
     TokenizerT *newTokenizer = (TokenizerT *) malloc(sizeof(TokenizerT));
     
-    long int streamSize = strlen(ts) + 1;
+    long int streamSize = strlen(ts) + 2;
     newTokenizer->inputStream = (char *) malloc(sizeof(char) * streamSize);
     strcpy(newTokenizer->inputStream, ts);
     newTokenizer->inputIter = newTokenizer->inputStream;
@@ -75,7 +75,7 @@ void TKDestroy(TokenizerT *tk) {
 
 
 void nextChar(TokenizerT *tk) {
-    tk->bufferIter[0] = tk->inputIter[0];  // move new char to end of buffer
+    tk->bufferIter[0] = tk->inputIter[0];  // copy new char to end of buffer
     tk->inputIter++;                       // move the input iterator over
     tk->bufferIter++;                      // move the buffer iterator over
     tk->bufferIter[0] = '\0';              // add a null to the end of buffer
@@ -84,12 +84,14 @@ void nextChar(TokenizerT *tk) {
         // TODO: exit gracefully
         exit(1);
     }
+    //printf("BI:%s   TB:%s   II:%s   IS:%s\n", tk->bufferIter, tk->tokenBuffer, tk->inputStream, tk->inputIter);
+    assert(strlen(tk->bufferIter) == 0);
 }
 
 void clearBuffer(TokenizerT *tk) {
-    tk->tokenBuffer[0] = '\0';  // immediately end the string
     tk->bufferSize = 0;
     tk->bufferIter = tk->tokenBuffer;
+    tk->bufferIter[0] = '\0';  // immediately end the string
 }
 
 
@@ -183,61 +185,61 @@ TokenT *_word(TokenizerT *tk) {
         return _word(tk);
     } else {  // end of token
         if(isReservedWord(tk->tokenBuffer)) {
-            return makeToken(tk, "word");
-        } else {
             return makeToken(tk, "reserved word");
+        } else {
+            return makeToken(tk, "word");
         }
     }
 }
 
 //function to handle being given a zero as the first char in a new token
-TokenT *_zero(TokenizerT *tk) {
-    nextChar(tk);
-    if((tk->inputIter)>=0 && (tk->inputIter)<=7 ) {
-        return _octal(tk);
-    }
-    if((tk->inputIter)=='x' || (tk->inputIter)=='X'){
-        int isFirst = 1;
-        return _hex(tk, 1);
-    }
-    if((tk->inputIter)=='.'){
-        return _float(tk);
-    }
-    else {
-        return makeToken(tk, "zero");
-    }
-}
+//TokenT *_zero(TokenizerT *tk) {
+//    nextChar(tk);
+//    if((tk->inputIter)>=0 && (tk->inputIter)<=7 ) {
+//        return _octal(tk);
+//    }
+//    if((tk->inputIter)=='x' || (tk->inputIter)=='X'){
+//        int isFirst = 1;
+//        return _hex(tk, 1);
+//    }
+//    if((tk->inputIter)=='.'){
+//        return _float(tk);
+//    }
+//    else {
+//        return makeToken(tk, "zero");
+//    }
+//}
 
 //function for handling octal numbers
-TokenT *_octal(TokenizerT *tk) {
-
-}
+//TokenT *_octal(TokenizerT *tk) {
+//
+//}
 
 //function for handling hex numbers
-TokenT *_hex(TokenizerT *tk, int isFirst) {
-    nextChar(tk);
-    if((isxdigit(tk->inputIter))){
-        return _hex(tk);
-    }
-    else {
-        if(isFirst = 1) {
-            //TODO: ERROR MESSAGE HERE
-        }
-        else {
-            return makeToken(tk, "hexadecimal number");
-        }
-    }
-}
+//TokenT *_hex(TokenizerT *tk, int isFirst) {
+//    nextChar(tk);
+//    if((isxdigit(tk->inputIter))){
+//        return _hex(tk);
+//    }
+//    else {
+//        if(isFirst = 1) {
+//            //TODO: ERROR MESSAGE HERE
+//        }
+//        else {
+//            return makeToken(tk, "hexadecimal number");
+//        }
+//    }
+//}
 
 //function for handling floating point numbers
-TokenT *_float(TokenizerT *tk) {
-
-}
+//TokenT *_float(TokenizerT *tk) {
+//
+//}
 
 //function for handling floating point numbers involving exponents
-TokenT *_expofloat(TokenizerT *tk) {
-
-}
+//TokenT *_expofloat(TokenizerT *tk) {
+//
+//}
 
 
 /*
@@ -252,12 +254,14 @@ TokenT *_expofloat(TokenizerT *tk) {
  * You need to fill in this function as part of your implementation.
  */
 TokenT *TKGetNextToken(TokenizerT *tk) {
+    clearBuffer(tk);
     char curr = tk->inputIter[0];
     
     // skip all whitespace before next token
     while(isspace(curr)) {
         nextChar(tk);
         clearBuffer(tk);
+        curr = tk->inputIter[0];
     }
 
     if(curr == '\0') {
