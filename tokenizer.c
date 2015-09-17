@@ -196,6 +196,7 @@ void printToken(TokenT *token) {
 
 // ***** HUGE TODO: make sure to handle if the input stream ends abruptly *****
 
+TokenT *TKGetNextToken(TokenizerT *tk);
 
 TokenT *_invalid(TokenizerT *tk) {
     nextChar(tk);
@@ -283,16 +284,19 @@ TokenT *_bit_and(TokenizerT *tk) {
  * '\cEOF --> invalid via EOF
  * '\c'   --> valid
  * '\cc   --> invalid via structure
+ *
+ * incomplete char literals end abruptly.
+ * invalid char literals don't close properly or at all.
  */
 TokenT *_single_quote(TokenizerT *tk) {
     int atEndOfFile = nextChar(tk);
     if(atEndOfFile) {
-        return makeToken(tk, "invalid char literal");  // case: 'EOF
+        return makeToken(tk, "incomplete char literal");  // case: 'EOF
     }
     if(tk->inputIter[0] != '\\') {
         atEndOfFile = nextChar(tk);
         if(atEndOfFile) {
-            return makeToken(tk, "invalid char literal");  // case: 'cEOF
+            return makeToken(tk, "incomplete char literal");  // case: 'cEOF
         }
         if(tk->inputIter[0] == '\'') {
             nextChar(tk);
@@ -304,11 +308,11 @@ TokenT *_single_quote(TokenizerT *tk) {
     } else {
         atEndOfFile = nextChar(tk);
         if(atEndOfFile) {
-            return makeToken(tk, "invalid char literal");  // case: '\EOF
+            return makeToken(tk, "incomplete char literal");  // case: '\EOF
         }
         atEndOfFile = nextChar(tk);
         if(atEndOfFile) {
-            return makeToken(tk, "invalid char literal");  // case: '\cEOF
+            return makeToken(tk, "incomplete char literal");  // case: '\cEOF
         }
         if(tk->inputIter[0] == '\'') {
             nextChar(tk);
@@ -376,11 +380,58 @@ TokenT *_dot(TokenizerT *tk) {
     return makeToken(tk, "struct member operator");
 }
 
+/*
+ * Because the two functions below are for comments and NOT for tokens, we 
+ * can't store the string in the tokenBuffer. Comments could be arbitrarily
+ * long and we don't have to recognize them, so it makes sense to skip them 
+ * while clearing the tokenBuffer at each new character.
+ */
+TokenT *_line_comment(TokenizerT *tk) {
+    while(1) {
+        nextChar(tk);
+        clearBuffer(tk);
+        if(tk->inputIter[0] == '\n') {
+            nextChar(tk);
+            clearBuffer(tk);
+            return TKGetNextToken(tk);
+        }
+        if(tk->inputIter[0] == '\0') {
+            return TKGetNextToken(tk);
+        }
+    }
+}
+TokenT *_block_comment(TokenizerT *tk) {
+    while(1) {
+        nextChar(tk);
+        clearBuffer(tk);
+        while(tk->inputIter[0] == '*') {
+            nextChar(tk);
+            clearBuffer(tk);
+            if(tk->inputIter[0] == '/') {
+                nextChar(tk);
+                clearBuffer(tk);
+                return TKGetNextToken(tk);
+            }
+        }
+        if(tk->inputIter[0] == '\0') {
+            return TKGetNextToken(tk);
+        }
+    }
+}
+
 TokenT *_div(TokenizerT *tk) {
     nextChar(tk);
     if(tk->inputIter[0] == '=') {
         nextChar(tk);
         return makeToken(tk, "divide-equals operator");
+    }
+    if(tk->inputIter[0] == '/') {
+        nextChar(tk);
+        return _line_comment(tk);
+    }
+    if(tk->inputIter[0] == '*') {
+        nextChar(tk);
+        return _block_comment(tk);
     }
     return makeToken(tk, "division operator");
 }
