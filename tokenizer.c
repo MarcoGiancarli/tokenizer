@@ -230,8 +230,8 @@ TokenT *_neq(TokenizerT *tk) {
     }
 }
 
-// TODO: FIX -- for strings that are not ended, 
-//       it tokenizes the rest of the text twice
+// TODO: FIX -- for strings that are not ended, it 
+//       tokenizes the rest of the text twice
 TokenT *_double_quote(TokenizerT *tk) {
     int atEndOfFile = nextChar(tk);
     while(tk->inputIter[0] != '"') {
@@ -244,7 +244,7 @@ TokenT *_double_quote(TokenizerT *tk) {
         if(atEndOfFile) {
             return makeToken(tk, "unended string literal");
         }
-        nextChar(tk);
+        atEndOfFile = nextChar(tk);
     }
     nextChar(tk);
     return makeToken(tk, "string literal");
