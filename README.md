@@ -4,15 +4,15 @@ Systems Programming project 1: C tokenizer
 
 Possible Token Types:
 ---------------------
-[ ] zero
-[ ] hex numbers
-[ ] octal numbers
-[ ] decimal numbers
-[ ] float (with/without exponent part, with/without decimal)
-[x] word
-[x] reserved word
-[x] all operators (see C reference sheet)
-[x] comments (// and /*)
+* [ ] zero
+* [ ] hex numbers
+* [ ] octal numbers
+* [ ] decimal numbers
+* [ ] float (with/without exponent part, with/without decimal)
+* [x] word
+* [x] reserved word
+* [x] all operators (see C reference sheet)
+* [x] comments (// and /*)
 
 
 Test Case Script
