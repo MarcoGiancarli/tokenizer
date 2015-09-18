@@ -549,7 +549,7 @@ TokenT *_expofloat(TokenizerT *tk, int isFirst, int lastWasSign) {
       return _expofloat(tk, 0, 1);
     }
     else if(lastWasSign == 1) {
-      //TODO ERROR MESSAGE HERE
+      return _invalid(tk);
     }
     else {
       return makeToken(tk, "floating point number with exponent");
@@ -557,10 +557,10 @@ TokenT *_expofloat(TokenizerT *tk, int isFirst, int lastWasSign) {
   }
   else {
     if(isFirst==1) {
-      //TODO ERROR MESSAGE HERE
+      return _invalid(tk);
     }
     else if(lastWasSign == 1) {
-      //TODO ERROR MESSAGE HERE
+      return _invalid(tk);
     }
     else {
       return makeToken(tk, "floating point number with exponent");
@@ -579,7 +579,7 @@ TokenT *_float(TokenizerT *tk, int isFirst) {
   }
   else {
     if(isFirst == 1){
-      //TODO: ERROR MESSAGE HERE
+      return _invalid(tk);
     }
     else{
       return makeToken(tk, "floating point number");
@@ -605,8 +605,8 @@ TokenT *_hex(TokenizerT *tk, int isFirst) {
         return _hex(tk, 0);
     }
     else {
-        if(isFirst = 1) {
-            //TODO: ERROR MESSAGE HERE
+        if(isFirst == 1) {
+            return _invalid(tk);
         }
         else {
             return makeToken(tk, "hexadecimal number");
@@ -621,7 +621,6 @@ TokenT *_zero(TokenizerT *tk) {
         return _octal(tk);
     }
     if((tk->inputIter[0])=='x' || (tk->inputIter[0])=='X'){
-        int isFirst = 1;
         return _hex(tk, 1);
     }
     if((tk->inputIter[0])=='.'){
