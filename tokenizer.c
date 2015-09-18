@@ -541,10 +541,10 @@ TokenT *_bit_not(TokenizerT *tk) {
 //function for handling floating point numbers involving exponents
 TokenT *_expofloat(TokenizerT *tk, int isFirst, int lastWasSign) {
   nextChar(tk);
-  if(isdigit(tk->inputIter)) {
+  if(isdigit(tk->inputIter[0])) {
     return _expofloat(tk, 0, 0);
   }
-  else if((tk->inputIter) == '+' || (tk->inputIter) == '-') {
+  else if((tk->inputIter[0]) == '+' || (tk->inputIter) == '-') {
     if(isFirst == 1){
       return _expofloat(tk, 0, 1);
     }
@@ -571,10 +571,10 @@ TokenT *_expofloat(TokenizerT *tk, int isFirst, int lastWasSign) {
 //function for handling floating point numbers
 TokenT *_float(TokenizerT *tk, int isFloat) {
   nextChar(tk);
-  if(isdigit(tk->inputIter)){
+  if(isdigit(tk->inputIter[0])){
     return _float(tk, 0);
   }
-  else if((tk->inputIter) == 'e' || (tk->inputIter) == 'E') {
+  else if((tk->inputIter[0]) == 'e' || (tk->inputIter[0]) == 'E') {
     return _expofloat(tk, 1, 0);
   }
   else {
@@ -590,7 +590,7 @@ TokenT *_float(TokenizerT *tk, int isFloat) {
 //function for handling octal numbers
 TokenT *_octal(TokenizerT *tk) {
   nextChar(tk);
-  if((tk->inputIter)>='0' && (tk->inputIter)<='7' ) {
+  if((tk->inputIter[0])>='0' && (tk->inputIter[0])<='7' ) {
       return _octal(tk);
   }
   else {
@@ -601,14 +601,14 @@ TokenT *_octal(TokenizerT *tk) {
 //function to handle being given a zero as the first char in a new token
 TokenT *_zero(TokenizerT *tk) {
     nextChar(tk);
-    if((tk->inputIter)>=0 && (tk->inputIter)<=7 ) {
+    if((tk->inputIter[0])>=0 && (tk->inputIter[0])<=7 ) {
         return _octal(tk);
     }
-    if((tk->inputIter)=='x' || (tk->inputIter)=='X'){
+    if((tk->inputIter[0])=='x' || (tk->inputIter[0])=='X'){
         int isFirst = 1;
         return _hex(tk, 1);
     }
-    if((tk->inputIter)=='.'){
+    if((tk->inputIter[0])=='.'){
         return _float(tk);
     }
     else {
@@ -619,7 +619,7 @@ TokenT *_zero(TokenizerT *tk) {
 //function for handling hex numbers
 TokenT *_hex(TokenizerT *tk, int isFirst) {
     nextChar(tk);
-    if((isxdigit(tk->inputIter))){
+    if((isxdigit(tk->inputIter[0]))){
         return _hex(tk);
     }
     else {
