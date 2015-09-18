@@ -544,7 +544,7 @@ TokenT *_expofloat(TokenizerT *tk, int isFirst, int lastWasSign) {
   if(isdigit(tk->inputIter[0])) {
     return _expofloat(tk, 0, 0);
   }
-  else if((tk->inputIter[0]) == '+' || (tk->inputIter) == '-') {
+  else if((tk->inputIter[0]) == '+' || (tk->inputIter[0]) == '-') {
     if(isFirst == 1){
       return _expofloat(tk, 0, 1);
     }
@@ -569,7 +569,7 @@ TokenT *_expofloat(TokenizerT *tk, int isFirst, int lastWasSign) {
 }
 
 //function for handling floating point numbers
-TokenT *_float(TokenizerT *tk, int isFloat) {
+TokenT *_float(TokenizerT *tk, int isFirst) {
   nextChar(tk);
   if(isdigit(tk->inputIter[0])){
     return _float(tk, 0);
@@ -598,6 +598,22 @@ TokenT *_octal(TokenizerT *tk) {
   }
 }
 
+//function for handling hex numbers
+TokenT *_hex(TokenizerT *tk, int isFirst) {
+    nextChar(tk);
+    if((isxdigit(tk->inputIter[0]))){
+        return _hex(tk, 0);
+    }
+    else {
+        if(isFirst = 1) {
+            //TODO: ERROR MESSAGE HERE
+        }
+        else {
+            return makeToken(tk, "hexadecimal number");
+        }
+    }
+}
+
 //function to handle being given a zero as the first char in a new token
 TokenT *_zero(TokenizerT *tk) {
     nextChar(tk);
@@ -609,28 +625,14 @@ TokenT *_zero(TokenizerT *tk) {
         return _hex(tk, 1);
     }
     if((tk->inputIter[0])=='.'){
-        return _float(tk);
+        return _float(tk, 1);
     }
     else {
         return makeToken(tk, "zero");
     }
 }
 
-//function for handling hex numbers
-TokenT *_hex(TokenizerT *tk, int isFirst) {
-    nextChar(tk);
-    if((isxdigit(tk->inputIter[0]))){
-        return _hex(tk);
-    }
-    else {
-        if(isFirst = 1) {
-            //TODO: ERROR MESSAGE HERE
-        }
-        else {
-            return makeToken(tk, "hexadecimal number");
-        }
-    }
-}
+
 
 
 /*
@@ -660,7 +662,7 @@ TokenT *TKGetNextToken(TokenizerT *tk) {
     } else if(isalpha(curr) || curr == '_') {
         return _word(tk);
     } else if(curr == '0') {
-        return _zero(tk)
+        return _zero(tk);
     } else if(curr == '!') { // neq
         return _neq(tk);
     } else if(curr == '"') { // double_quote
