@@ -617,7 +617,7 @@ TokenT *_hex(TokenizerT *tk, int isFirst) {
 //function to handle being given a zero as the first char in a new token
 TokenT *_zero(TokenizerT *tk) {
     nextChar(tk);
-    printf("nextChar recieved.\n", );
+    printf("nextChar recieved.\n" );
     if((tk->inputIter[0])>=0 && (tk->inputIter[0])<=7 ) {
         printf("Recognized as octal, moving to octal state.\n" );
         return _octal(tk);
