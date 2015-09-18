@@ -74,7 +74,16 @@ void TKDestroy(TokenizerT *tk) {
 }
 
 
-void nextChar(TokenizerT *tk) {
+/*
+ * Copy one character from the inputStream to the tokenBuffer. Then, move the 
+ * iterators forward to the next character. 
+ *
+ * tk->inputIter[0] contains the character to be added to the current token.
+ * tk->bufferIter[0] contains the most recent character added to the token.
+ * 
+ * Returns 1 if inputIter[0] is '\0', else 0.
+ */
+int nextChar(TokenizerT *tk) {
     tk->bufferIter[0] = tk->inputIter[0];  // copy new char to end of buffer
     tk->inputIter++;                       // move the input iterator over
     tk->bufferIter++;                      // move the buffer iterator over
@@ -84,8 +93,16 @@ void nextChar(TokenizerT *tk) {
         // TODO: exit gracefully
         exit(1);
     }
-    //printf("BI:%s   TB:%s   II:%s   IS:%s\n", tk->bufferIter, tk->tokenBuffer, tk->inputStream, tk->inputIter);
+
+    //printf("BI:%s   TB:%s   II:%s   IS:%s\n", tk->bufferIter, tk->tokenBuffer,
+    //        tk->inputStream, tk->inputIter);
     assert(strlen(tk->bufferIter) == 0);
+    
+    int nextIsNull = 0;
+    if(tk->inputIter[0] == '\0') {
+        nextIsNull = 1;
+    }
+    return nextIsNull;
 }
 
 void clearBuffer(TokenizerT *tk) {
@@ -179,6 +196,7 @@ void printToken(TokenT *token) {
 
 // ***** HUGE TODO: make sure to handle if the input stream ends abruptly *****
 
+TokenT *TKGetNextToken(TokenizerT *tk);
 
 TokenT *_invalid(TokenizerT *tk) {
     nextChar(tk);
@@ -188,7 +206,7 @@ TokenT *_invalid(TokenizerT *tk) {
 // TODO: remove unnecessary recursion for multiple chars in a row
 TokenT *_word(TokenizerT *tk) {
     nextChar(tk);
-    if(isalnum(tk->inputIter[0])) {
+    if(isalnum(tk->inputIter[0]) || tk->inputIter[0] == '_') {
         return _word(tk);
     } else {  // end of token
         if(isReservedWord(tk->tokenBuffer)) {
@@ -200,26 +218,36 @@ TokenT *_word(TokenizerT *tk) {
 }
 
 TokenT *_neq(TokenizerT *tk) {
-    nextChar(tk);
+    int atEndOfFile = nextChar(tk);
+    if(atEndOfFile) {
+        return _invalid(tk);
+    }
     if(tk->inputIter[0] == '=') {
         nextChar(tk);
         return makeToken(tk, "not-equals operator");
     } else {
-        nextChar(tk);
         return _invalid(tk);
     }
 }
 
+// TODO: FIX -- for strings that are not ended, it 
+//       tokenizes the rest of the text twice
 TokenT *_double_quote(TokenizerT *tk) {
-    nextChar(tk);
+    int atEndOfFile = nextChar(tk);
     while(tk->inputIter[0] != '"') {
         if(tk->inputIter[0] == '\\') {
-            nextChar(tk);
+            if(atEndOfFile) {
+                return makeToken(tk, "unended string literal");
+            }
+            atEndOfFile = nextChar(tk);
         }
-        nextChar(tk);
+        if(atEndOfFile) {
+            return makeToken(tk, "unended string literal");
+        }
+        atEndOfFile = nextChar(tk);
     }
     nextChar(tk);
-    return makeToken(tk, "string");
+    return makeToken(tk, "string literal");
 }
 
 TokenT *_mod(TokenizerT *tk) {
@@ -236,212 +264,373 @@ TokenT *_bit_and(TokenizerT *tk) {
     nextChar(tk);
     if(tk->inputIter[0] == '=') {
         nextChar(tk);
-        return makeToken(tk, "and-equals operator");
+        return makeToken(tk, "bitwise-and-equals operator");
     } else if(tk->inputIter[0] == '&') {
         nextChar(tk);
         return makeToken(tk, "logical-and operator");
     } else {
-        return makeToken(tk, "bitwise-and operator");
+        return makeToken(tk, "bitwise-and operator/address operator");
     }
 }
 
+/*
+ * All 8 possibilities:
+ *
+ * 'EOF   --> invalid via EOF
+ * 'cEOF  --> invalid via EOF
+ * 'c'    --> valid
+ * 'cc    --> invalid via structure
+ * '\EOF  --> invalid via EOF
+ * '\cEOF --> invalid via EOF
+ * '\c'   --> valid
+ * '\cc   --> invalid via structure
+ *
+ * incomplete char literals end abruptly.
+ * invalid char literals don't close properly or at all.
+ */
 TokenT *_single_quote(TokenizerT *tk) {
-    nextChar(tk);
+    int atEndOfFile = nextChar(tk);
+    if(atEndOfFile) {
+        return makeToken(tk, "incomplete char literal");  // case: 'EOF
+    }
     if(tk->inputIter[0] != '\\') {
-        nextChar(tk);
+        atEndOfFile = nextChar(tk);
+        if(atEndOfFile) {
+            return makeToken(tk, "incomplete char literal");  // case: 'cEOF
+        }
         if(tk->inputIter[0] == '\'') {
             nextChar(tk);
-            return makeToken(tk, "");
-        } else {
+            return makeToken(tk, "char literal");  // case: 'c'
+        } else {  // must be invalid by structure, not just EOF
             nextChar(tk);
-            return 0;  // TODO: finish this whole function from here down
+            return makeToken(tk, "invalid char literal");  // case: 'cc
         }
-        return makeToken(tk, "");
-    } else if(tk->inputIter[0] == '&') {
-        nextChar(tk);
-        return makeToken(tk, "");
     } else {
-        return makeToken(tk, "");
+        atEndOfFile = nextChar(tk);
+        if(atEndOfFile) {
+            return makeToken(tk, "incomplete char literal");  // case: '\EOF
+        }
+        atEndOfFile = nextChar(tk);
+        if(atEndOfFile) {
+            return makeToken(tk, "incomplete char literal");  // case: '\cEOF
+        }
+        if(tk->inputIter[0] == '\'') {
+            nextChar(tk);
+            return makeToken(tk, "char literal");  // case: '\c'
+        } else {  // must be invalid by structure, not just EOF
+            nextChar(tk);
+            return makeToken(tk, "invalid char literal");  // case: '\cc
+        }
     }
 }
 
 TokenT *_open_paren(TokenizerT *tk) {
-    return 0;
+    nextChar(tk);
+    return makeToken(tk, "opening parenthesis");
 }
 
 TokenT *_close_paren(TokenizerT *tk) {
-    return 0;
+    nextChar(tk);
+    return makeToken(tk, "closing parenthesis");
 }
 
 TokenT *_mult(TokenizerT *tk) {
-    return 0;
+    nextChar(tk);
+    if(tk->inputIter[0] == '=') {
+        nextChar(tk);
+        return makeToken(tk, "multiply-equals operator");
+    }
+    return makeToken(tk, "multiplication operator/pointer operator");
 }
 
 TokenT *_plus(TokenizerT *tk) {
-    return 0;
+    nextChar(tk);
+    if(tk->inputIter[0] == '=') {
+        nextChar(tk);
+        return makeToken(tk, "plus-equals operator");
+    } else if(tk->inputIter[0] == '+') {
+        nextChar(tk);
+        return makeToken(tk, "increment operator");
+    }
+    return makeToken(tk, "addition operator");
 }
 
 TokenT *_comma(TokenizerT *tk) {
-    return 0;
+    nextChar(tk);
+    return makeToken(tk, "comma");
 }
 
 TokenT *_minus(TokenizerT *tk) {
-    return 0;
+    nextChar(tk);
+    if(tk->inputIter[0] == '=') {
+        nextChar(tk);
+        return makeToken(tk, "minus-equals operator");
+    } else if(tk->inputIter[0] == '-') {
+        nextChar(tk);
+        return makeToken(tk, "decrement operator");
+    } else if(tk->inputIter[0] == '>') {
+        nextChar(tk);
+        return makeToken(tk, "struct pointer operator");
+    }
+    return makeToken(tk, "subtraction operator");
 }
 
 TokenT *_dot(TokenizerT *tk) {
-    return 0;
+    nextChar(tk);
+    return makeToken(tk, "struct member operator");
+}
+
+/*
+ * Because the two functions below are for comments and NOT for tokens, we 
+ * can't store the string in the tokenBuffer. Comments could be arbitrarily
+ * long and we don't have to recognize them, so it makes sense to skip them 
+ * while clearing the tokenBuffer at each new character.
+ */
+TokenT *_line_comment(TokenizerT *tk) {
+    while(1) {
+        nextChar(tk);
+        clearBuffer(tk);
+        if(tk->inputIter[0] == '\n') {
+            nextChar(tk);
+            clearBuffer(tk);
+            return TKGetNextToken(tk);
+        }
+        if(tk->inputIter[0] == '\0') {
+            return TKGetNextToken(tk);
+        }
+    }
+}
+TokenT *_block_comment(TokenizerT *tk) {
+    while(1) {
+        nextChar(tk);
+        clearBuffer(tk);
+        while(tk->inputIter[0] == '*') {
+            nextChar(tk);
+            clearBuffer(tk);
+            if(tk->inputIter[0] == '/') {
+                nextChar(tk);
+                clearBuffer(tk);
+                return TKGetNextToken(tk);
+            }
+        }
+        if(tk->inputIter[0] == '\0') {
+            return TKGetNextToken(tk);
+        }
+    }
 }
 
 TokenT *_div(TokenizerT *tk) {
-    return 0;
+    nextChar(tk);
+    if(tk->inputIter[0] == '=') {
+        nextChar(tk);
+        return makeToken(tk, "divide-equals operator");
+    }
+    if(tk->inputIter[0] == '/') {
+        nextChar(tk);
+        return _line_comment(tk);
+    }
+    if(tk->inputIter[0] == '*') {
+        nextChar(tk);
+        return _block_comment(tk);
+    }
+    return makeToken(tk, "division operator");
 }
 
 TokenT *_ternary_colon(TokenizerT *tk) {
-    return 0;
+    nextChar(tk);
+    return makeToken(tk, "ternary colon operator");
 }
 
 TokenT *_semicolon(TokenizerT *tk) {
-    return 0;
+    nextChar(tk);
+    return makeToken(tk, "end-of-statement operator");
 }
 
 TokenT *_lt(TokenizerT *tk) {
-    return 0;
+    nextChar(tk);
+    if(tk->inputIter[0] == '=') {
+        nextChar(tk);
+        return makeToken(tk, "less-than-or-equal-to operator");
+    } else if(tk->inputIter[0] == '<') {
+        nextChar(tk);
+        if(tk->inputIter[0] == '=') {
+            nextChar(tk);
+            return makeToken(tk, "left-shift-equals operator");
+        }
+        return makeToken(tk, "left-shift operator");
+    }
+    return makeToken(tk, "less-than operator");
 }
 
 TokenT *_eq(TokenizerT *tk) {
-    return 0;
+    nextChar(tk);
+    if(tk->inputIter[0] == '=') {
+        nextChar(tk);
+        return makeToken(tk, "equality operator");
+    }
+    return makeToken(tk, "assignment operator");
 }
 
 TokenT *_gt(TokenizerT *tk) {
-    return 0;
+    nextChar(tk);
+    if(tk->inputIter[0] == '=') {
+        nextChar(tk);
+        return makeToken(tk, "greater-than-or-equal-to operator");
+    } else if(tk->inputIter[0] == '>') {
+        nextChar(tk);
+        if(tk->inputIter[0] == '=') {
+            nextChar(tk);
+            return makeToken(tk, "right-shift-equals operator");
+        }
+        return makeToken(tk, "right-shift operator");
+    }
+    return makeToken(tk, "greater-than operator");
 }
 
 TokenT *_ternary_qmark(TokenizerT *tk) {
-    return 0;
+    nextChar(tk);
+    return makeToken(tk, "ternary question mark operator");
 }
 
 TokenT *_open_bracket(TokenizerT *tk) {
-    return 0;
+    nextChar(tk);
+    return makeToken(tk, "opening bracket");
 }
 
 TokenT *_close_bracket(TokenizerT *tk) {
-    return 0;
+    nextChar(tk);
+    return makeToken(tk, "closing bracket");
 }
 
 TokenT *_bit_xor(TokenizerT *tk) {
-    return 0;
+    nextChar(tk);
+    return makeToken(tk, "bitwise-xor operator");
 }
 
 TokenT *_open_brace(TokenizerT *tk) {
-    return 0;
+    nextChar(tk);
+    return makeToken(tk, "opening brace");
 }
 
 TokenT *_bit_or(TokenizerT *tk) {
-    return 0;
+    nextChar(tk);
+    if(tk->inputIter[0] == '|') {
+        nextChar(tk);
+        return makeToken(tk, "logical-or operator");
+    } else if(tk->inputIter[0] == '=') {
+        nextChar(tk);
+        return makeToken(tk, "bitwise-or-equals operator");
+    }
+    return makeToken(tk, "bitwise-or operator");
 }
 
 TokenT *_close_brace(TokenizerT *tk) {
-    return 0;
+    nextChar(tk);
+    return makeToken(tk, "closing brace");
 }
 
 TokenT *_bit_not(TokenizerT *tk) {
-    return 0;
-}
-
-//function for handling floating point numbers involving exponents
-TokenT *_expofloat(TokenizerT *tk, int isFirst, int lastWasSign) {
-  nextChar(tk);
-  if(isdigit(tk->inputIter)) {
-    return _expofloat(tk, 0, 0);
-  }
-  else if((tk->inputIter) == '+' || (tk->inputIter) == '-') {
-    if(isFirst == 1){
-      return _expofloat(tk, 0, 1);
-    }
-    else if(lastWasSign == 1) {
-      //TODO ERROR MESSAGE HERE
-    }
-    else {
-      return makeToken(tk, "floating point number with exponent");
-    }
-  }
-  else {
-    if(isFirst==1) {
-      //TODO ERROR MESSAGE HERE
-    }
-    else if(lastWasSign == 1) {
-      //TODO ERROR MESSAGE HERE
-    }
-    else {
-      return makeToken(tk, "floating point number with exponent");
-    }
-  }
-}
-
-//function for handling floating point numbers
-TokenT *_float(TokenizerT *tk, int isFloat) {
-  nextChar(tk);
-  if(isdigit(tk->inputIter)){
-    return _float(tk, 0);
-  }
-  else if((tk->inputIter) == 'e' || (tk->inputIter) == 'E') {
-    return _expofloat(tk, 1, 0);
-  }
-  else {
-    if(isFirst == 1){
-      //TODO: ERROR MESSAGE HERE
-    }
-    else{
-      return makeToken(tk, "floating point number");
-    }
-  }
-}
-
-//function for handling octal numbers
-TokenT *_octal(TokenizerT *tk) {
-  nextChar(tk);
-  if((tk->inputIter)>='0' && (tk->inputIter)<='7' ) {
-      return _octal(tk);
-  }
-  else {
-    return makeToken(tk, "octal number");
-  }
-}
-
-//function to handle being given a zero as the first char in a new token
-TokenT *_zero(TokenizerT *tk) {
     nextChar(tk);
-    if((tk->inputIter)>=0 && (tk->inputIter)<=7 ) {
-        return _octal(tk);
+    if(tk->inputIter[0] == '=') {
+        nextChar(tk);
+        return makeToken(tk, "bitwise-not-equals operator");
     }
-    if((tk->inputIter)=='x' || (tk->inputIter)=='X'){
-        int isFirst = 1;
-        return _hex(tk, 1);
-    }
-    if((tk->inputIter)=='.'){
-        return _float(tk);
-    }
-    else {
-        return makeToken(tk, "zero");
-    }
+    return makeToken(tk, "bitwise-not operator");
 }
 
-//function for handling hex numbers
-TokenT *_hex(TokenizerT *tk, int isFirst) {
-    nextChar(tk);
-    if((isxdigit(tk->inputIter))){
-        return _hex(tk);
-    }
-    else {
-        if(isFirst = 1) {
-            //TODO: ERROR MESSAGE HERE
-        }
-        else {
-            return makeToken(tk, "hexadecimal number");
-        }
-    }
-}
+////function for handling floating point numbers involving exponents
+//TokenT *_expofloat(TokenizerT *tk, int isFirst, int lastWasSign) {
+//  nextChar(tk);
+//  if(isdigit(tk->inputIter)) {
+//    return _expofloat(tk, 0, 0);
+//  }
+//  else if((tk->inputIter) == '+' || (tk->inputIter) == '-') {
+//    if(isFirst == 1){
+//      return _expofloat(tk, 0, 1);
+//    }
+//    else if(lastWasSign == 1) {
+//      //TODO ERROR MESSAGE HERE
+//    }
+//    else {
+//      return makeToken(tk, "floating point number with exponent");
+//    }
+//  }
+//  else {
+//    if(isFirst==1) {
+//      //TODO ERROR MESSAGE HERE
+//    }
+//    else if(lastWasSign == 1) {
+//      //TODO ERROR MESSAGE HERE
+//    }
+//    else {
+//      return makeToken(tk, "floating point number with exponent");
+//    }
+//  }
+//}
+//
+////function for handling floating point numbers
+//TokenT *_float(TokenizerT *tk, int isFloat) {
+//  nextChar(tk);
+//  if(isdigit(tk->inputIter)){
+//    return _float(tk, 0);
+//  }
+//  else if((tk->inputIter) == 'e' || (tk->inputIter) == 'E') {
+//    return _expofloat(tk, 1, 0);
+//  }
+//  else {
+//    if(isFirst == 1){
+//      //TODO: ERROR MESSAGE HERE
+//    }
+//    else{
+//      return makeToken(tk, "floating point number");
+//    }
+//  }
+//}
+//
+////function for handling octal numbers
+//TokenT *_octal(TokenizerT *tk) {
+//  nextChar(tk);
+//  if((tk->inputIter)>='0' && (tk->inputIter)<='7' ) {
+//      return _octal(tk);
+//  }
+//  else {
+//    return makeToken(tk, "octal number");
+//  }
+//}
+//
+////function to handle being given a zero as the first char in a new token
+//TokenT *_zero(TokenizerT *tk) {
+//    nextChar(tk);
+//    if((tk->inputIter)>=0 && (tk->inputIter)<=7 ) {
+//        return _octal(tk);
+//    }
+//    if((tk->inputIter)=='x' || (tk->inputIter)=='X'){
+//        int isFirst = 1;
+//        return _hex(tk, 1);
+//    }
+//    if((tk->inputIter)=='.'){
+//        return _float(tk);
+//    }
+//    else {
+//        return makeToken(tk, "zero");
+//    }
+//}
+//
+////function for handling hex numbers
+//TokenT *_hex(TokenizerT *tk, int isFirst) {
+//    nextChar(tk);
+//    if((isxdigit(tk->inputIter))){
+//        return _hex(tk);
+//    }
+//    else {
+//        if(isFirst = 1) {
+//            //TODO: ERROR MESSAGE HERE
+//        }
+//        else {
+//            return makeToken(tk, "hexadecimal number");
+//        }
+//    }
+//}
 
 
 /*
