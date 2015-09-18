@@ -619,19 +619,19 @@ TokenT *_zero(TokenizerT *tk) {
     nextChar(tk);
     printf("nextChar recieved.\n", );
     if((tk->inputIter[0])>=0 && (tk->inputIter[0])<=7 ) {
-        printf("Recognized as octal, moving to octal state.\n", );
+        printf("Recognized as octal, moving to octal state.\n" );
         return _octal(tk);
     }
     if((tk->inputIter[0])=='x' || (tk->inputIter[0])=='X'){
-        printf("Recognized as hexadecimal, moving to hex state.\n", );
+        printf("Recognized as hexadecimal, moving to hex state.\n" );
         return _hex(tk, 1);
     }
     if((tk->inputIter[0])=='.'){
-        printf("Recognized as float, moving to float state.\n", );
+        printf("Recognized as float, moving to float state.\n" );
         return _float(tk, 1);
     }
     else {
-        printf("Token is just a 0.\n", );
+        printf("Token is just a 0.\n" );
         return makeToken(tk, "zero");
     }
 }
@@ -666,7 +666,7 @@ TokenT *TKGetNextToken(TokenizerT *tk) {
     } else if(isalpha(curr) || curr == '_') {
         return _word(tk);
     } else if(curr == '0') {
-        printf("curr is 0, moving to 0 state.\n", );
+        printf("curr is 0, moving to 0 state.\n" );
         return _zero(tk);
     } else if(curr == '!') { // neq
         return _neq(tk);
