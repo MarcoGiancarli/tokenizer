@@ -590,7 +590,7 @@ TokenT *_float(TokenizerT *tk, int isFirst) {
 //function for handling octal numbers
 TokenT *_octal(TokenizerT *tk) {
   nextChar(tk);
-  if((tk->inputIter[0])>='0' && (tk->inputIter[0])<='7' ) {
+  if((tk->inputIter[0])== '0' || (tk->inputIter[0])== '1' || (tk->inputIter[0])== '2' || (tk->inputIter[0])== '3' || (tk->inputIter[0])== '4' || (tk->inputIter[0])== '5' || (tk->inputIter[0])== '6' || (tk->inputIter[0])== '7') {
       return _octal(tk);
   }
   else {
@@ -618,7 +618,7 @@ TokenT *_hex(TokenizerT *tk, int isFirst) {
 TokenT *_zero(TokenizerT *tk) {
     nextChar(tk);
     printf("nextChar recieved.\n" );
-    if((tk->inputIter[0])>=0 && (tk->inputIter[0])<=7 ) {
+    if((tk->inputIter[0])== '0' || (tk->inputIter[0])== '1' || (tk->inputIter[0])== '2' || (tk->inputIter[0])== '3' || (tk->inputIter[0])== '4' || (tk->inputIter[0])== '5' || (tk->inputIter[0])== '6' || (tk->inputIter[0])== '7') {
         printf("Recognized as octal, moving to octal state.\n" );
         return _octal(tk);
     }
