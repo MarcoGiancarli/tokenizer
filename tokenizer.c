@@ -28,7 +28,7 @@ typedef struct TokenT_ TokenT;
 typedef struct TokenizerT_ TokenizerT;
 
 
-int isOctal( char * curr) {
+int isOctal( char curr) {
   if(curr == '0' || curr == '1' || curr == '2' || curr == '3' || curr == '4' || curr== '5' || curr == '6' || curr == '7') {
     return 1;
   } else {
