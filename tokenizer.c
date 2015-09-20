@@ -28,6 +28,15 @@ typedef struct TokenT_ TokenT;
 typedef struct TokenizerT_ TokenizerT;
 
 
+int isOctal( char * curr) {
+  if(curr == '0' || curr == '1' || curr == '2' || curr == '3' || curr == '4' || curr== '5' || curr == '6' || curr == '7') {
+    return 1;
+  } else {
+    return 0;
+  }
+}
+
+
 /*
  * TKCreate creates a new TokenizerT object for a given token stream
  * (given as a string).
@@ -590,7 +599,7 @@ TokenT *_float(TokenizerT *tk, int isFirst) {
 //function for handling octal numbers
 TokenT *_octal(TokenizerT *tk) {
   nextChar(tk);
-  if((tk->inputIter[0])== '0' || (tk->inputIter[0])== '1' || (tk->inputIter[0])== '2' || (tk->inputIter[0])== '3' || (tk->inputIter[0])== '4' || (tk->inputIter[0])== '5' || (tk->inputIter[0])== '6' || (tk->inputIter[0])== '7') {
+  if(isOctal(tk->inputIter[0]) == 1) {
       return _octal(tk);
   }
   else {
@@ -614,27 +623,50 @@ TokenT *_hex(TokenizerT *tk, int isFirst) {
     }
 }
 
+TokenT *_integer(TokenizerT *tk) {
+  nextChar(tk);
+  if(isdigit(tk->inputIter[0])) {
+    return _integer(tk);
+  }
+  else if((tk->inputIter[0])== '.') {
+    return _float(tk, 1);
+  }
+  else if ((tk->inputIter[0])== 'e' || (tk->inputIter[0])== 'E') {
+    return _expofloat(tk, 1, 0);
+  }
+  else {
+    return makeToken(tk, "integer");
+  }
+}
+
 //function to handle being given a zero as the first char in a new token
 TokenT *_zero(TokenizerT *tk) {
     nextChar(tk);
-    printf("nextChar recieved.\n" );
-    if((tk->inputIter[0])== '0' || (tk->inputIter[0])== '1' || (tk->inputIter[0])== '2' || (tk->inputIter[0])== '3' || (tk->inputIter[0])== '4' || (tk->inputIter[0])== '5' || (tk->inputIter[0])== '6' || (tk->inputIter[0])== '7') {
-        printf("Recognized as octal, moving to octal state.\n" );
+    //printf("nextChar recieved.\n" );
+    if(isOctal(tk->inputIter[0]) == 1) {
+        //printf("Recognized as octal, moving to octal state.\n" );
         return _octal(tk);
     }
     if((tk->inputIter[0])=='x' || (tk->inputIter[0])=='X'){
-        printf("Recognized as hexadecimal, moving to hex state.\n" );
+        //printf("Recognized as hexadecimal, moving to hex state.\n" );
         return _hex(tk, 1);
     }
     if((tk->inputIter[0])=='.'){
-        printf("Recognized as float, moving to float state.\n" );
+        //printf("Recognized as float, moving to float state.\n" );
         return _float(tk, 1);
     }
     else {
-        printf("Token is just a 0.\n" );
+        //printf("Token is just a 0.\n" );
         return makeToken(tk, "zero");
     }
 }
+
+//TokenT *_nonzeroDigit(TokenizerT *tk) {
+//  nextchar(tk);
+//  if(isdigit(tk->inputIter[0])) {
+//    return _integer(tk);
+//  }
+//}
 
 
 
@@ -666,8 +698,10 @@ TokenT *TKGetNextToken(TokenizerT *tk) {
     } else if(isalpha(curr) || curr == '_') {
         return _word(tk);
     } else if(curr == '0') {
-        printf("curr is 0, moving to 0 state.\n" );
+        //printf("curr is 0, moving to 0 state.\n" );
         return _zero(tk);
+    } else if(isdigit(curr)) {
+        return _integer(tk);
     } else if(curr == '!') { // neq
         return _neq(tk);
     } else if(curr == '"') { // double_quote
