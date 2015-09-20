@@ -28,6 +28,15 @@ typedef struct TokenT_ TokenT;
 typedef struct TokenizerT_ TokenizerT;
 
 
+int isOctal( char curr) {
+  if(curr == '0' || curr == '1' || curr == '2' || curr == '3' || curr == '4' || curr== '5' || curr == '6' || curr == '7') {
+    return 1;
+  } else {
+    return 0;
+  }
+}
+
+
 /*
  * TKCreate creates a new TokenizerT object for a given token stream
  * (given as a string).
@@ -44,7 +53,7 @@ typedef struct TokenizerT_ TokenizerT;
 TokenizerT *TKCreate(char *ts) {
     // TODO: use strcpy to copy input stream ts
     TokenizerT *newTokenizer = (TokenizerT *) malloc(sizeof(TokenizerT));
-    
+
     long int streamSize = strlen(ts) + 2;
     newTokenizer->inputStream = (char *) malloc(sizeof(char) * streamSize);
     strcpy(newTokenizer->inputStream, ts);
@@ -75,12 +84,12 @@ void TKDestroy(TokenizerT *tk) {
 
 
 /*
- * Copy one character from the inputStream to the tokenBuffer. Then, move the 
- * iterators forward to the next character. 
+ * Copy one character from the inputStream to the tokenBuffer. Then, move the
+ * iterators forward to the next character.
  *
  * tk->inputIter[0] contains the character to be added to the current token.
  * tk->bufferIter[0] contains the most recent character added to the token.
- * 
+ *
  * Returns 1 if inputIter[0] is '\0', else 0.
  */
 int nextChar(TokenizerT *tk) {
@@ -97,7 +106,7 @@ int nextChar(TokenizerT *tk) {
     //printf("BI:%s   TB:%s   II:%s   IS:%s\n", tk->bufferIter, tk->tokenBuffer,
     //        tk->inputStream, tk->inputIter);
     assert(strlen(tk->bufferIter) == 0);
-    
+
     int nextIsNull = 0;
     if(tk->inputIter[0] == '\0') {
         nextIsNull = 1;
@@ -230,7 +239,7 @@ TokenT *_neq(TokenizerT *tk) {
     }
 }
 
-// TODO: FIX -- for strings that are not ended, it 
+// TODO: FIX -- for strings that are not ended, it
 //       tokenizes the rest of the text twice
 TokenT *_double_quote(TokenizerT *tk) {
     int atEndOfFile = nextChar(tk);
@@ -381,9 +390,9 @@ TokenT *_dot(TokenizerT *tk) {
 }
 
 /*
- * Because the two functions below are for comments and NOT for tokens, we 
+ * Because the two functions below are for comments and NOT for tokens, we
  * can't store the string in the tokenBuffer. Comments could be arbitrarily
- * long and we don't have to recognize them, so it makes sense to skip them 
+ * long and we don't have to recognize them, so it makes sense to skip them
  * while clearing the tokenBuffer at each new character.
  */
 TokenT *_line_comment(TokenizerT *tk) {
@@ -538,99 +547,128 @@ TokenT *_bit_not(TokenizerT *tk) {
     return makeToken(tk, "bitwise-not operator");
 }
 
-////function for handling floating point numbers involving exponents
-//TokenT *_expofloat(TokenizerT *tk, int isFirst, int lastWasSign) {
-//  nextChar(tk);
-//  if(isdigit(tk->inputIter)) {
-//    return _expofloat(tk, 0, 0);
-//  }
-//  else if((tk->inputIter) == '+' || (tk->inputIter) == '-') {
-//    if(isFirst == 1){
-//      return _expofloat(tk, 0, 1);
-//    }
-//    else if(lastWasSign == 1) {
-//      //TODO ERROR MESSAGE HERE
-//    }
-//    else {
-//      return makeToken(tk, "floating point number with exponent");
-//    }
-//  }
-//  else {
-//    if(isFirst==1) {
-//      //TODO ERROR MESSAGE HERE
-//    }
-//    else if(lastWasSign == 1) {
-//      //TODO ERROR MESSAGE HERE
-//    }
-//    else {
-//      return makeToken(tk, "floating point number with exponent");
-//    }
+//function for handling floating point numbers involving exponents
+TokenT *_expofloat(TokenizerT *tk, int isFirst, int lastWasSign) {
+  nextChar(tk);
+  if(isdigit(tk->inputIter[0])) {
+    return _expofloat(tk, 0, 0);
+  }
+  else if((tk->inputIter[0]) == '+' || (tk->inputIter[0]) == '-') {
+    if(isFirst == 1){
+      return _expofloat(tk, 0, 1);
+    }
+    else if(lastWasSign == 1) {
+      return _invalid(tk);
+    }
+    else {
+      return makeToken(tk, "floating point number with exponent");
+    }
+  }
+  else {
+    if(isFirst==1) {
+      return _invalid(tk);
+    }
+    else if(lastWasSign == 1) {
+      return _invalid(tk);
+    }
+    else {
+      return makeToken(tk, "floating point number with exponent");
+    }
+  }
+}
+
+//function for handling floating point numbers
+TokenT *_float(TokenizerT *tk, int isFirst) {
+  nextChar(tk);
+  if(isdigit(tk->inputIter[0])){
+    return _float(tk, 0);
+  }
+  else if((tk->inputIter[0]) == 'e' || (tk->inputIter[0]) == 'E') {
+    return _expofloat(tk, 1, 0);
+  }
+  else {
+    if(isFirst == 1){
+      return _invalid(tk);
+    }
+    else{
+      return makeToken(tk, "floating point number");
+    }
+  }
+}
+
+//function for handling octal numbers
+TokenT *_octal(TokenizerT *tk) {
+  nextChar(tk);
+  if(isOctal(tk->inputIter[0]) == 1) {
+      return _octal(tk);
+  }
+  else {
+    return makeToken(tk, "octal number");
+  }
+}
+
+//function for handling hex numbers
+TokenT *_hex(TokenizerT *tk, int isFirst) {
+    nextChar(tk);
+    if((isxdigit(tk->inputIter[0]))){
+        return _hex(tk, 0);
+    }
+    else {
+        if(isFirst == 1) {
+            return _invalid(tk);
+        }
+        else {
+            return makeToken(tk, "hexadecimal number");
+        }
+    }
+}
+
+TokenT *_integer(TokenizerT *tk) {
+  nextChar(tk);
+  if(isdigit(tk->inputIter[0])) {
+    return _integer(tk);
+  }
+  else if((tk->inputIter[0])== '.') {
+    return _float(tk, 1);
+  }
+  else if ((tk->inputIter[0])== 'e' || (tk->inputIter[0])== 'E') {
+    return _expofloat(tk, 1, 0);
+  }
+  else {
+    return makeToken(tk, "integer");
+  }
+}
+
+//function to handle being given a zero as the first char in a new token
+TokenT *_zero(TokenizerT *tk) {
+    nextChar(tk);
+    //printf("nextChar recieved.\n" );
+    if(isOctal(tk->inputIter[0]) == 1) {
+        //printf("Recognized as octal, moving to octal state.\n" );
+        return _octal(tk);
+    }
+    if((tk->inputIter[0])=='x' || (tk->inputIter[0])=='X'){
+        //printf("Recognized as hexadecimal, moving to hex state.\n" );
+        return _hex(tk, 1);
+    }
+    if((tk->inputIter[0])=='.'){
+        //printf("Recognized as float, moving to float state.\n" );
+        return _float(tk, 1);
+    }
+    else {
+        //printf("Token is just a 0.\n" );
+        return makeToken(tk, "zero");
+    }
+}
+
+//TokenT *_nonzeroDigit(TokenizerT *tk) {
+//  nextchar(tk);
+//  if(isdigit(tk->inputIter[0])) {
+//    return _integer(tk);
 //  }
 //}
-//
-////function for handling floating point numbers
-//TokenT *_float(TokenizerT *tk, int isFloat) {
-//  nextChar(tk);
-//  if(isdigit(tk->inputIter)){
-//    return _float(tk, 0);
-//  }
-//  else if((tk->inputIter) == 'e' || (tk->inputIter) == 'E') {
-//    return _expofloat(tk, 1, 0);
-//  }
-//  else {
-//    if(isFirst == 1){
-//      //TODO: ERROR MESSAGE HERE
-//    }
-//    else{
-//      return makeToken(tk, "floating point number");
-//    }
-//  }
-//}
-//
-////function for handling octal numbers
-//TokenT *_octal(TokenizerT *tk) {
-//  nextChar(tk);
-//  if((tk->inputIter)>='0' && (tk->inputIter)<='7' ) {
-//      return _octal(tk);
-//  }
-//  else {
-//    return makeToken(tk, "octal number");
-//  }
-//}
-//
-////function to handle being given a zero as the first char in a new token
-//TokenT *_zero(TokenizerT *tk) {
-//    nextChar(tk);
-//    if((tk->inputIter)>=0 && (tk->inputIter)<=7 ) {
-//        return _octal(tk);
-//    }
-//    if((tk->inputIter)=='x' || (tk->inputIter)=='X'){
-//        int isFirst = 1;
-//        return _hex(tk, 1);
-//    }
-//    if((tk->inputIter)=='.'){
-//        return _float(tk);
-//    }
-//    else {
-//        return makeToken(tk, "zero");
-//    }
-//}
-//
-////function for handling hex numbers
-//TokenT *_hex(TokenizerT *tk, int isFirst) {
-//    nextChar(tk);
-//    if((isxdigit(tk->inputIter))){
-//        return _hex(tk);
-//    }
-//    else {
-//        if(isFirst = 1) {
-//            //TODO: ERROR MESSAGE HERE
-//        }
-//        else {
-//            return makeToken(tk, "hexadecimal number");
-//        }
-//    }
-//}
+
+
 
 
 /*
@@ -659,8 +697,11 @@ TokenT *TKGetNextToken(TokenizerT *tk) {
         return NULL;
     } else if(isalpha(curr) || curr == '_') {
         return _word(tk);
-    //} else if(curr == '0') {
-    //    return _zero(tk)
+    } else if(curr == '0') {
+        //printf("curr is 0, moving to 0 state.\n" );
+        return _zero(tk);
+    } else if(isdigit(curr)) {
+        return _integer(tk);
     } else if(curr == '!') { // neq
         return _neq(tk);
     } else if(curr == '"') { // double_quote
