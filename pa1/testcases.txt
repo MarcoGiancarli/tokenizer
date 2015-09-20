@@ -1,0 +1,26 @@
+Testcases
+---------
+
+The following files contain the text, output, and expected output for four testcases. The self testcase is a copy of the tokenizer.c source file. Testcase1 contains text to explicitly test for all possible token types and most (if not all) points of failure for tokens. Testcase2 and Testcase3 are source files for the linux kernel (time.c and cpu.c, respectively).
+
+
+Self
+    Text:     self.txt
+    Output:   self_output.txt
+    Expected: self_expected.txt
+
+Testcase1
+    Text:     testcase1.txt
+    Output:   testcase1_output.txt
+    Expected: testcase1_expected.txt
+
+Testcase2
+    Text:     testcase2.txt
+    Output:   testcase2_output.txt
+    Expected: testcase2_expected.txt
+
+Testcase3
+    Text:     testcase3.txt
+    Output:   testcase3_output.txt
+    Expected: testcase3_expected.txt
+

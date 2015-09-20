@@ -237,13 +237,13 @@ TokenT *_word(TokenizerT *tk) {
 TokenT *_neq(TokenizerT *tk) {
     int atEndOfFile = nextChar(tk);
     if(atEndOfFile) {
-        return makeToken(tk, "logical-not operator");
+        return _invalid(tk);
     }
     if(tk->inputIter[0] == '=') {
         nextChar(tk);
         return makeToken(tk, "not-equals operator");
     } else {
-        return makeToken(tk, "logical-not operator");
+        return _invalid(tk);
     }
 }
 

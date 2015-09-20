@@ -5,10 +5,8 @@
 // STRING/FLOAT LITERALS
 "hey man y u do dis"
 "y u make so many string";
-"y u try to escape sequence strings lik dis \"stuff\" -- now is dis 1 string or 2 strings with stuff in the middle? u find out k."
-"technically, this is fucked up because two adjacent strings with nothing in between AREN'T recognized as one string and made one";;
+"y u try to escape sequence strings lik dis \"stuff\" -- now is dis 1 string or 2 strings with stuff in the middle? u find out."
 'm', 'a', '\k', '\e', 'a', '\s', ;
-
 
 // WORDS & RESERVED WORDS
 hello there these are words. words words words _words are __words__ are &words are w or ds;
@@ -18,9 +16,9 @@ words
 loltheseareoperators#include%%%=%+++=+,---=-?x:0;;!=~///=/,***=*,^&&&=&|||=|.->-->
 ()[]{}<<<<=<=< >>>>=>=> &*
 
-
 // NUMBERS
 045 00124 66 0x5a54 5e6 7e-7 5e+7 4.3e7 3.5e-7 3.7e+0
+
 
 
 // LET'S BREAK THINGS NOW
